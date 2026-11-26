@@ -1,0 +1,76 @@
+# Base configuration for the Danish callable mortgage bond pricer.
+# Every number that drives a figure or table lives here, so a run is
+# reproducible from this file plus the data files it points to.
+
+valuation_date: 2026-11-26
+
+# ---------------------------------------------------------------------------
+# Input data. Point these at data/raw/... once you have real data.
+# Schemas are documented in data/README.md.
+# ---------------------------------------------------------------------------
+data:
+  swap_rates: data/sample/swap_rates.csv
+  government_bonds: data/sample/government_bonds.csv
+
+# ---------------------------------------------------------------------------
+# Market conventions (see src/dkcallables/conventions.py; all "to verify").
+# ---------------------------------------------------------------------------
+conventions:
+  day_count: "30E/360"        # coupon accrual; "30E/360", "ACT/365F" or "ACT/ACT"
+  notice_lag_months: 2        # prepayment notice before the term date
+  payments_per_year: 4        # quarterly terms: 1 Jan, 1 Apr, 1 Jul, 1 Oct
+
+# ---------------------------------------------------------------------------
+# Curve construction
+# ---------------------------------------------------------------------------
+curve:
+  source: swaps               # "swaps" (bootstrap) or "government" (NSS proxy)
+  interpolation: cubic        # "cubic" (smooth forward) or "linear" (log DF)
+  swap_fixed_frequency: 1     # DKK swap fixed leg: annual (to verify)
+
+# ---------------------------------------------------------------------------
+# Synthetic data generator (scripts/make_synthetic_data.py)
+# ---------------------------------------------------------------------------
+synthetic:
+  seed: 20261126
+  # "True" Nelson-Siegel-Svensson swap curve (continuously compounded zeros).
+  true_nss:
+    beta0: 0.0330
+    beta1: -0.0120
+    beta2: -0.0100
+    beta3: 0.0150
+    tau1: 1.5
+    tau2: 9.0
+  swap_tenors: [1, 2, 3, 4, 5, 7, 10, 12, 15, 20, 25, 30]
+  # Government curve = swap curve shifted by this spread (swap spread proxy).
+  government_spread_bp: -15.0
+  government_yield_noise_bp: 1.5
+  government_bonds:
+    - {isin: SYNTH-DGB-2027, coupon: 0.0000, maturity_date: 2027-11-15}
+    - {isin: SYNTH-DGB-2028, coupon: 0.0050, maturity_date: 2028-11-15}
+    - {isin: SYNTH-DGB-2030, coupon: 0.0175, maturity_date: 2030-11-15}
+    - {isin: SYNTH-DGB-2031, coupon: 0.0000, maturity_date: 2031-11-15}
+    - {isin: SYNTH-DGB-2032, coupon: 0.0200, maturity_date: 2032-11-15}
+    - {isin: SYNTH-DGB-2033, coupon: 0.0225, maturity_date: 2033-11-15}
+    - {isin: SYNTH-DGB-2035, coupon: 0.0250, maturity_date: 2035-11-15}
+    - {isin: SYNTH-DGB-2037, coupon: 0.0300, maturity_date: 2037-11-15}
+    - {isin: SYNTH-DGB-2039, coupon: 0.0450, maturity_date: 2039-11-15}
+    - {isin: SYNTH-DGB-2045, coupon: 0.0275, maturity_date: 2045-11-15}
+    - {isin: SYNTH-DGB-2052, coupon: 0.0250, maturity_date: 2052-11-15}
+
+# ---------------------------------------------------------------------------
+# Callable bonds to price (synthetic examples; ISINs are not real).
+# Filled out further in stage 3.
+# ---------------------------------------------------------------------------
+bonds:
+  - {isin: SYNTH-1.0-2053, coupon: 0.010, maturity_date: 2053-10-01, label: "1% 2053 (deep discount)"}
+  - {isin: SYNTH-4.0-2056, coupon: 0.040, maturity_date: 2056-10-01, label: "4% 2056 (near par)"}
+  - {isin: SYNTH-5.0-2056, coupon: 0.050, maturity_date: 2056-10-01, label: "5% 2056 (premium)"}
+
+# ---------------------------------------------------------------------------
+# Simulation (used from stage 2)
+# ---------------------------------------------------------------------------
+simulation:
+  seed: 42
+  n_paths: 4000               # antithetic pairs => must be even
+  steps_per_year: 4           # quarterly grid (matches the term dates)
