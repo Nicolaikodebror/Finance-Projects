@@ -42,9 +42,20 @@ curve: it sits below swaps by the swap spread.
 The true zero curve the synthetic data was generated from: `t_years, zero_rate` (continuously
 compounded). Used only for reference plots and tests.
 
+## `short_rates.csv` — short-rate history (optional)
+
+| column       | type  | description                                    |
+|--------------|-------|------------------------------------------------|
+| `date`       | date  | observation date, equally spaced (e.g. weekly) |
+| `short_rate` | float | short rate, decimal                            |
+
+Used only by the optional Hull-White helper (`hull_white.calibrate_from_history: true`).
+A suitable proxy is Danmarks Nationalbank's current-account rate, or the DESTR/T/N rate from
+Nationalbanken's Statbank. The synthetic file is a weekly OU path with known
+`(a, sigma, mu)` (see `synthetic.short_rate_history` in the config).
+
 ## Added in later stages
 
 * Callable bond market prices (stage 5).
 * Prepayment history `date, isin, coupon, outstanding_before, prepaid_amount, refi_gain_proxy`
   (stage 4).
-* Short-rate history for the optional Hull-White parameter helper (stage 2).

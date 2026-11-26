@@ -11,6 +11,7 @@ valuation_date: 2026-11-26
 data:
   swap_rates: data/sample/swap_rates.csv
   government_bonds: data/sample/government_bonds.csv
+  short_rates: data/sample/short_rates.csv
 
 # ---------------------------------------------------------------------------
 # Market conventions (see src/dkcallables/conventions.py; all "to verify").
@@ -27,6 +28,15 @@ curve:
   source: swaps               # "swaps" (bootstrap) or "government" (NSS proxy)
   interpolation: cubic        # "cubic" (smooth forward) or "linear" (log DF)
   swap_fixed_frequency: 1     # DKK swap fixed leg: annual (to verify)
+
+# ---------------------------------------------------------------------------
+# Hull-White 1F (risk-neutral). Set by hand: no swaption data to calibrate to.
+# sigma is the absolute (normal) vol of the short rate: 0.008 = 80bp/sqrt(yr).
+# ---------------------------------------------------------------------------
+hull_white:
+  a: 0.03
+  sigma: 0.0080
+  calibrate_from_history: false   # true => estimate a, sigma from data.short_rates
 
 # ---------------------------------------------------------------------------
 # Synthetic data generator (scripts/make_synthetic_data.py)
@@ -57,6 +67,13 @@ synthetic:
     - {isin: SYNTH-DGB-2039, coupon: 0.0450, maturity_date: 2039-11-15}
     - {isin: SYNTH-DGB-2045, coupon: 0.0275, maturity_date: 2045-11-15}
     - {isin: SYNTH-DGB-2052, coupon: 0.0250, maturity_date: 2052-11-15}
+  # Weekly short-rate history from an OU process with known parameters.
+  short_rate_history:
+    years: 20
+    a: 0.15
+    sigma: 0.0080
+    mu: 0.0200
+    r0: 0.0300
 
 # ---------------------------------------------------------------------------
 # Callable bonds to price (synthetic examples; ISINs are not real).

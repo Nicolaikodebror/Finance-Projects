@@ -22,3 +22,14 @@ a bank would do instead. The list grows with each stage.
 | K4 | Flat-forward extrapolation beyond the last knot (30y). | Ultimate-forward-rate (UFR) style extrapolation, or market quotes out to 50y. |
 | K5 | Government bonds are a **proxy** if swap rates are unavailable. They sit below swaps by the swap spread, which is not constant across maturities. | Use the swap curve. |
 | K6 | NSS is fitted with box bounds on the parameters to keep it identified on about 10 bonds. Weights are inverse duration (approximate yield errors). | Central-bank-style fits with exact yield errors, filtering of illiquid or special bonds, and possibly smoothing splines. |
+
+## Hull-White model
+
+| # | Simplification | Production practice |
+|---|----------------|---------------------|
+| H1 | One factor. All rates are perfectly correlated, so the model cannot produce curve twists. This matters because the refinancing decision depends on the long rate, while discounting depends on the whole path. | Two-factor models (G2++, or LMM-style models) calibrated to the swaption cube. Danish banks typically run 2-factor models for callables. |
+| H2 | `a` and `sigma` are set by hand in the config (a = 3%, sigma = 80bp). They are not calibrated to option prices. | Calibrate to the risk-neutral prices of a co-terminal swaption strip (the prepayment option is a Bermudan receiver swaption), or to caps/floors. |
+| H3 | The optional history-based helper estimates `(a, sigma)` under the real-world measure from an AR(1) fit. sigma is well identified, but `a` is not: its standard error is about sqrt(2a/T), which is larger than `a` itself on 20 years of data. | Use risk-neutral option prices. If history is used at all, use it only for sigma, and as a sanity check. |
+| H4 | Gaussian rates: the short rate can go negative (roughly the bottom 5% of paths at 10y). That is plausible for DKK (negative rates 2012-2022), but it also lets long rates go negative. | Shifted-lognormal or SABR-type vol, or a floor at an effective lower bound, if the desk's view needs one. |
+| H5 | Constant `a` and `sigma`. | Piecewise-constant `sigma(t)` to fit a whole strip of swaption vols. |
+| H6 | The simulation is exact on any grid: (x, ∫x) are drawn jointly from their bivariate normal, so there is no discretisation error in the path discount factors. The only approximation left in pricing is Monte Carlo noise (with antithetic variates). | Same idea; production systems add quasi-random numbers (Sobol) and control variates. |

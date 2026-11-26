@@ -11,8 +11,10 @@ Generated files (stage 1)
                              with i.i.d. yield noise per bond.
 * ``true_zero_curve.csv`` - the true zero curve on a grid, for reference plots.
 
-Later stages add the callable bond prices, short-rate history and prepayment
-history.
+* ``short_rates.csv``    - weekly short-rate history from an OU process with
+                             known (a, sigma, mu), for the calibration helper.
+
+Later stages add the callable bond prices and prepayment history.
 """
 
 from __future__ import annotations
@@ -83,6 +85,30 @@ def make_government_bonds(
     return pd.DataFrame(rows)
 
 
+def make_short_rate_history(
+    valuation_date: date,
+    years: float,
+    a: float,
+    sigma: float,
+    mu: float,
+    r0: float,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """Weekly OU history ending at the valuation date, simulated exactly.
+
+    r_{k+1} = mu + (r_k - mu) e^{-a dt} + sigma sqrt((1 - e^{-2a dt}) / (2a)) Z_k.
+    """
+    dates = pd.date_range(end=pd.Timestamp(valuation_date), periods=int(years * 52) + 1, freq="7D")
+    dt = 7.0 / 365.0
+    decay = np.exp(-a * dt)
+    sd = sigma * np.sqrt(-np.expm1(-2.0 * a * dt) / (2.0 * a))
+    r = np.empty(dates.size)
+    r[0] = r0
+    for k in range(1, r.size):
+        r[k] = mu + (r[k - 1] - mu) * decay + sd * rng.standard_normal()
+    return pd.DataFrame({"date": dates.date, "short_rate": r})
+
+
 def write_synthetic_data(cfg: dict[str, Any], out_dir: str | Path) -> dict[str, Path]:
     """Generate all stage-1 synthetic files into ``out_dir`` and return their paths."""
     out = Path(out_dir)
@@ -97,6 +123,7 @@ def write_synthetic_data(cfg: dict[str, Any], out_dir: str | Path) -> dict[str, 
         "swap_rates": out / "swap_rates.csv",
         "government_bonds": out / "government_bonds.csv",
         "true_zero_curve": out / "true_zero_curve.csv",
+        "short_rates": out / "short_rates.csv",
     }
     make_swap_rates(curve, syn["swap_tenors"], freq).to_csv(paths["swap_rates"], index=False)
     make_government_bonds(
@@ -112,4 +139,14 @@ def write_synthetic_data(cfg: dict[str, Any], out_dir: str | Path) -> dict[str, 
     pd.DataFrame({"t_years": grid, "zero_rate": nss_zero(grid, params)}).to_csv(
         paths["true_zero_curve"], index=False
     )
+    h = syn["short_rate_history"]
+    make_short_rate_history(
+        cfg["valuation_date"],
+        float(h["years"]),
+        float(h["a"]),
+        float(h["sigma"]),
+        float(h["mu"]),
+        float(h["r0"]),
+        rng,
+    ).to_csv(paths["short_rates"], index=False, float_format="%.8f")
     return paths
