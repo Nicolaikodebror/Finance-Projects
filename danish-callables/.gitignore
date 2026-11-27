@@ -1,0 +1,13 @@
+# generated output
+results/*
+!results/.gitkeep
+
+# real data stays local; only the folder skeleton is committed
+data/raw/*
+!data/raw/.gitkeep
+
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
